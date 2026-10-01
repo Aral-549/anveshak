@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ANVESHAK Console</title>
+<style>
+  :root {
+    --navy: #1F3864; --blue: #0070C0; --blue-soft: #E8F1FA; --ink: #1d2433; --muted: #5b6577;
+    --line: #d6dde8; --bg: #f5f7fa; --card: #ffffff; --ok: #2e7d32; --bad: #c62828; --orange: #E67E22;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); }
+  header { background: var(--navy); color: #fff; padding: 14px 24px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: .04em; }
+  header .sub { color: #c9d6ea; font-size: 13px; }
+  header .model { margin-left: auto; font: 12px ui-monospace, monospace; color: #c9d6ea; }
+  main { max-width: 1280px; margin: 0 auto; padding: 18px 16px 40px; display: grid; gap: 16px;
+         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  @media (max-width: 900px) { main { grid-template-columns: minmax(0, 1fr); } }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+  section.wide { grid-column: 1 / -1; }
+  h2 { margin: 0 0 4px; font-size: 15px; color: var(--navy); }
+  p.hint { margin: 0 0 12px; color: var(--muted); font-size: 12.5px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 12px; }
+  label { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 3px; }
+  input, select { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); min-width: 0; }
+  input:focus, select:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  button { font: inherit; padding: 7px 14px; border-radius: 6px; border: 1px solid var(--blue); background: var(--blue); color: #fff; cursor: pointer; }
+  button.ghost { background: #fff; color: var(--blue); }
+  button.danger { background: #fff; color: var(--bad); border-color: #e3b4b4; }
+  button:disabled { opacity: .55; cursor: progress; }
+  .status { font-size: 12.5px; color: var(--muted); }
+  .status.err { color: var(--bad); }
+  .rec { display: grid; grid-template-columns: 64px minmax(0, 1fr) 64px; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); }
+  .rec:last-child { border-bottom: 0; }
+  .rank { font-weight: 600; color: var(--navy); }
+  .bar { height: 10px; background: var(--blue-soft); border-radius: 5px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--blue); }
+  .bar.hot > i { background: var(--orange); }
+  .num { font-variant-numeric: tabular-nums; text-align: right; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; background: #fafbfd; position: sticky; top: 0; }
+  td.note { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; background: var(--blue-soft); color: var(--navy); }
+  .pill.on { background: #fdebd8; color: #8a4b0f; }
+  .empty { color: var(--muted); padding: 10px 0; }
+  .filters { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-bottom: 10px; }
+  .filters label { flex-direction: column; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ANVESHAK</h1>
+  <span class="sub">Band-state console · hit model scores where to listen next</span>
+  <span class="model" id="model">loading model…</span>
+</header>
+<main>
+  <section>
+    <h2>Recommended next dwell</h2>
+    <p class="hint">Latest record per band, ranked by the hit model's probability of a new threat.</p>
+    <div class="row" style="margin-top:0">
+      <label style="flex-direction:row;align-items:center;gap:6px">Top <input id="k" type="number" min="1" max="32" value="5" style="width:64px"></label>
+      <button class="ghost" id="refreshRec">Refresh</button>
+    </div>
+    <div id="recs" style="margin-top:8px"></div>
+  </section>
+
+  <section>
+    <h2>Snapshot a simulated mission</h2>
+    <p class="hint">Runs the simulator to the given slot and stores every band's state as a record.</p>
+    <div class="grid">
+      <label>Suite<select id="s_suite"><option>S1</option><option>S2</option><option>S3</option><option>S4</option><option>S5</option></select></label>
+      <label>Seed<input id="s_seed" type="number" min="0" max="100000" value="1000"></label>
+      <label>Slot (10 ms each)<input id="s_slot" type="number" min="1" max="12000" value="3000"></label>
+      <label>Policy<select id="s_policy"><option>hybrid</option><option>predictive</option><option>sweep</option></select></label>
+    </div>
+    <div class="row"><button id="snap">Take snapshot</button><span class="status" id="snapStatus"></span></div>
+  </section>
+
+  <section class="wide">
+    <h2 id="formTitle">New band state</h2>
+    <p class="hint">Features as defined in contracts/hit_model.md. Threat fields must be 0 when their flag is 0.</p>
+    <form id="form" class="grid"></form>
+    <div class="row">
+      <button id="save">Create</button>
+      <button class="ghost" id="cancel" hidden>Cancel edit</button>
+      <span class="status" id="formStatus"></span>
+    </div>
+  </section>
+
+  <section class="wide">
+    <h2>Records</h2>
+    <div class="filters">
+      <label>Band<input id="f_band" type="number" min="0" max="255" placeholder="all" style="width:90px"></label>
+      <label>Limit<input id="f_limit" type="number" min="1" max="1000" value="100" style="width:90px"></label>
+      <button class="ghost" id="applyFilter">Apply</button>
+      <span class="status" id="count"></span>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th></th><th>ID</th><th>Band</th><th>Probability</th><th>Window</th><th>Confirm</th><th>Staleness</th>
+        <th>Novel mean</th><th>Band threat</th><th>Source</th><th>Note</th><th>Updated</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+  </section>
+</main>
+<script>
+const FIELDS = [
+  ["band", "int", 4], ["window", "flag", 0], ["window_threat", "num", 0], ["soon", "flag", 0],
+  ["time_to_window", "num", 1.0], ["lock_period", "num", 0], ["confirm", "flag", 0], ["confirm_threat", "num", 0],
+  ["staleness", "num", 0.125], ["novel_mean", "num", 0.5], ["novel_evidence", "num", 0.5], ["band_threat", "num", 0.5],
+  ["occ_mean", "num", 0.5], ["long_here", "flag", 0], ["since_novel", "num", 12], ["note", "text", ""],
+];
+const $ = id => document.getElementById(id);
+let editing = null;
+
+function el(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  Object.assign(n, props);
+  for (const k of kids) n.append(k instanceof Node ? k : document.createTextNode(String(k)));
+  return n;
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, { headers: { "Content-Type": "application/json" }, ...opts });
+  if (r.status === 204) return null;
+  const body = await r.json().catch(() => null);
+  if (!r.ok) {
+    const d = body && body.detail;
+    throw new Error(Array.isArray(d) ? d.map(x => `${(x.loc || []).slice(-1)[0] || ""}: ${x.msg}`).join("; ") : (d || r.statusText));
+  }
+  return body;
+}
+
+function buildForm() {
+  const f = $("form");
+  for (const [name, kind, def] of FIELDS) {
+    let input;
+    if (kind === "flag") {
+      input = el("select", { id: "x_" + name });
+      input.append(el("option", { value: "0" }, "0"), el("option", { value: "1" }, "1"));
+    } else {
+      input = el("input", { id: "x_" + name, type: kind === "text" ? "text" : "number",
+                            step: kind === "int" ? "1" : "any", maxLength: 500 });
+    }
+    input.value = String(def);
+    f.append(el("label", {}, name.replace(/_/g, " "), input));
+  }
+}
+
+function readForm() {
+  const body = {};
+  for (const [name, kind] of FIELDS) {
+    const v = $("x_" + name).value;
+    if (kind === "text") body[name] = v === "" ? null : v;
+    else body[name] = kind === "num" ? Number(v) : parseInt(v, 10);
+  }
+  return body;
+}
+
+function fillForm(rec) {
+  for (const [name] of FIELDS) $("x_" + name).value = rec[name] == null ? "" : String(rec[name]);
+}
+
+function resetForm() {
+  editing = null;
+  for (const [name, , def] of FIELDS) $("x_" + name).value = String(def);
+  $("formTitle").textContent = "New band state";
+  $("save").textContent = "Create";
+  $("cancel").hidden = true;
+}
+
+function probCell(p) {
+  const bar = el("div", { className: "bar" + (p >= 0.5 ? " hot" : "") }, el("i"));
+  bar.firstChild.style.width = (Math.max(p, 0.004) * 100).toFixed(1) + "%";
+  bar.style.width = "90px";
+  return el("div", { style: "display:flex;align-items:center;gap:8px" }, bar, el("span", { className: "num" }, p.toFixed(4)));
+}
+
+function pill(on) { return el("span", { className: "pill" + (on ? " on" : "") }, on ? "yes" : "no"); }
+
+async function loadRows() {
+  const params = new URLSearchParams();
+  if ($("f_band").value !== "") params.set("band", $("f_band").value);
+  params.set("limit", $("f_limit").value || "100");
+  const rows = await api("/api/band-states?" + params);
+  const tb = $("rows");
+  tb.replaceChildren();
+  if (!rows.length) tb.append(el("tr", {}, el("td", { colSpan: 12, className: "empty" }, "No records yet. Create one or take a snapshot.")));
+  for (const r of rows) {
+    const edit = el("button", { className: "ghost" }, "Edit");
+    edit.onclick = () => { editing = r.id; fillForm(r); $("formTitle").textContent = `Edit record ${r.id}`;
+                           $("save").textContent = "Save changes"; $("cancel").hidden = false; $("form").scrollIntoView({ behavior: "smooth" }); };
+    const del = el("button", { className: "danger" }, "Delete");
+    del.onclick = async () => { try { await api(`/api/band-states/${r.id}`, { method: "DELETE" }); await refreshAll(); }
+                                catch (e) { $("formStatus").textContent = e.message; $("formStatus").className = "status err"; } };
+    tb.append(el("tr", {},
+      el("td", {}, el("div", { style: "display:flex;gap:6px" }, edit, del)),
+      el("td", { className: "num" }, r.id), el("td", { className: "num" }, r.band), el("td", {}, probCell(r.probability)),
+      el("td", {}, pill(r.window)), el("td", {}, pill(r.confirm)), el("td", { className: "num" }, r.staleness.toFixed(3)),
+      el("td", { className: "num" }, r.novel_mean.toFixed(3)), el("td", { className: "num" }, r.band_threat.toFixed(2)),
+      el("td", {}, r.source), el("td", { className: "note", title: r.note || "" }, r.note || ""),
+      el("td", {}, new Date(r.updated_at).toLocaleString())));
+  }
+  $("count").textContent = `${rows.length} shown`;
+}
+
+async function loadRecs() {
+  const k = Math.min(Math.max(parseInt($("k").value, 10) || 5, 1), 32);
+  const recs = await api("/api/recommendation?k=" + k);
+  const box = $("recs");
+  box.replaceChildren();
+  if (!recs.length) { box.append(el("div", { className: "empty" }, "No records to rank yet.")); return; }
+  recs.forEach((r, i) => {
+    const bar = el("div", { className: "bar" + (r.probability >= 0.5 ? " hot" : "") }, el("i"));
+    bar.firstChild.style.width = (Math.max(r.probability, 0.004) * 100).toFixed(1) + "%";
+    box.append(el("div", { className: "rec" }, el("span", { className: "rank" }, `#${i + 1} b${r.band}`), bar,
+                  el("span", { className: "num" }, r.probability.toFixed(3))));
+  });
+}
+
+async function refreshAll() { await Promise.all([loadRows(), loadRecs()]); }
+
+async function init() {
+  buildForm();
+  const h = await api("/api/health");
+  $("model").textContent = `model ${h.model_sha256.slice(0, 12)} · ${h.features.length} features · ${h.records} records`;
+  $("save").onclick = async () => {
+    const st = $("formStatus");
+    try {
+      const body = readForm();
+      const rec = editing == null ? await api("/api/band-states", { method: "POST", body: JSON.stringify(body) })
+                                  : await api(`/api/band-states/${editing}`, { method: "PUT", body: JSON.stringify(body) });
+      st.textContent = `${editing == null ? "Created" : "Updated"} record ${rec.id}: probability ${rec.probability.toFixed(4)}`;
+      st.className = "status";
+      resetForm();
+      await refreshAll();
+    } catch (e) { st.textContent = e.message; st.className = "status err"; }
+  };
+  $("cancel").onclick = resetForm;
+  $("applyFilter").onclick = loadRows;
+  $("refreshRec").onclick = loadRecs;
+  $("snap").onclick = async () => {
+    const st = $("snapStatus"), btn = $("snap");
+    btn.disabled = true; st.textContent = "Simulating…"; st.className = "status";
+    try {
+      const body = { suite: $("s_suite").value, seed: parseInt($("s_seed").value, 10),
+                     slot: parseInt($("s_slot").value, 10), policy: $("s_policy").value };
+      const recs = await api("/api/band-states/snapshot", { method: "POST", body: JSON.stringify(body) });
+      st.textContent = `Stored ${recs.length} band states.`;
+      await refreshAll();
+    } catch (e) { st.textContent = e.message; st.className = "status err"; }
+    finally { btn.disabled = false; }
+  };
+  await refreshAll();
+}
+init().catch(e => { $("model").textContent = "API unreachable: " + e.message; });
+</script>
+</body>
+</html>

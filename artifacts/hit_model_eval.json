@@ -1,0 +1,116 @@
+{
+ "no_skill_auc_pr": 0.008846458047628403,
+ "eval_rows": 4800000,
+ "eval_positives": 42463,
+ "best_iteration": 300,
+ "val_auc_pr_best": 0.13872550263991185,
+ "n_trees_scored": 361,
+ "scored_with": "HitModel.load(artifacts/hit_model.json).score",
+ "overall": {
+  "hit_model (ours)": {
+   "auc_pr": 0.13511380774788037,
+   "roc_auc": 0.8982558903158845
+  },
+  "smart_scan_xgboost.pkl (supplied)": {
+   "auc_pr": 0.01007431888111905,
+   "roc_auc": 0.49061817144820885
+  },
+  "novel_mean alone": {
+   "auc_pr": 0.025295381651166526,
+   "roc_auc": 0.8037223240472939
+  },
+  "window alone": {
+   "auc_pr": 0.01726219950805169,
+   "roc_auc": 0.518887663633106
+  },
+  "staleness alone": {
+   "auc_pr": 0.009325628027212107,
+   "roc_auc": 0.47969994273175354
+  }
+ },
+ "per_suite": {
+  "S1": {
+   "hit_model": {
+    "auc_pr": 0.31733621420630653,
+    "roc_auc": 0.7375865729833528
+   },
+   "supplied": {
+    "auc_pr": 0.0006179888687468304,
+    "roc_auc": 0.41085805275060816
+   },
+   "positive_rate": 0.0007447916666666667
+  },
+  "S2": {
+   "hit_model": {
+    "auc_pr": 0.10980352700370906,
+    "roc_auc": 0.8013359610978343
+   },
+   "supplied": {
+    "auc_pr": 0.02514230575319605,
+    "roc_auc": 0.473264462265374
+   },
+   "positive_rate": 0.025463541666666666
+  },
+  "S3": {
+   "hit_model": {
+    "auc_pr": 0.1384823184505188,
+    "roc_auc": 0.886783569281143
+   },
+   "supplied": {
+    "auc_pr": 0.0037433955569504047,
+    "roc_auc": 0.5267120307491912
+   },
+   "positive_rate": 0.0028145833333333334
+  },
+  "S4": {
+   "hit_model": {
+    "auc_pr": 0.5528667065179614,
+    "roc_auc": 0.8384545914990617
+   },
+   "supplied": {
+    "auc_pr": 0.0003986597601985777,
+    "roc_auc": 0.3034971380705245
+   },
+   "positive_rate": 0.0005864583333333334
+  },
+  "S5": {
+   "hit_model": {
+    "auc_pr": 0.12819214137114124,
+    "roc_auc": 0.8298113648030614
+   },
+   "supplied": {
+    "auc_pr": 0.014674620333876696,
+    "roc_auc": 0.45238640820093096
+   },
+   "positive_rate": 0.014622916666666666
+  }
+ },
+ "params": {
+  "objective": "binary:logistic",
+  "eval_metric": "aucpr",
+  "tree_method": "hist",
+  "max_depth": 6,
+  "eta": 0.05,
+  "subsample": 0.8,
+  "colsample_bytree": 0.8,
+  "min_child_weight": 20,
+  "seed": 0,
+  "nthread": 16
+ },
+ "importance_gain": {
+  "window_threat": 2439.22,
+  "novel_mean": 1075.72,
+  "long_here": 354.49,
+  "band_threat": 317.93,
+  "novel_evidence": 316.31,
+  "occ_mean": 311.62,
+  "time_to_window": 264.92,
+  "since_novel": 211.55,
+  "lock_period": 179.22,
+  "staleness": 99.34,
+  "confirm_threat": 94.76,
+  "confirm": 82.18,
+  "window": 74.68,
+  "soon": 30.4
+ }
+}

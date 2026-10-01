@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# regenerable training data (~120 MB): make data
+artifacts/hit_data/
+# local app database and logs
+artifacts/*.db
+artifacts/*.log
+# Office lock files
+deck/out/~$*
+.~lock.*

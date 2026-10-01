@@ -1,0 +1,6 @@
+S1: wIR sweep 0.059 | predictive 0.452 | hybrid 0.494
+S2: wIR sweep 0.048 | predictive 0.117 | hybrid 0.082
+S3: wIR sweep 0.188 | predictive 0.739 | hybrid 0.621
+S4: wIR sweep 0.071 | predictive 0.431 | hybrid 0.191
+S5: wIR sweep 0.089 | predictive 0.281 | hybrid 0.247
+wrote artifacts/tune_hybrid/hl_1.0.json in 287.4 s
